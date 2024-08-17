@@ -75,3 +75,6 @@ venv.bak/
 
 # Environment variables file (if you use one)
 .env
+
+# Others
+config_setup.py
