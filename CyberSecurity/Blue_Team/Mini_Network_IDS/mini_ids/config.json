@@ -1,0 +1,12 @@
+{
+    "db_config": {
+        "host": "localhost",
+        "user": "Shield",
+        "password": "ELSHIELD12345@@",
+        "database_anomalies": "anomalies_db",
+        "database_packets": "packets_db"
+    },
+
+        "interface": "Ethernet"
+
+}
