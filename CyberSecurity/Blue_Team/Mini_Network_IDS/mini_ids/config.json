@@ -1,8 +1,8 @@
 {
     "db_config": {
         "host": "localhost",
-        "user": "Shield",
-        "password": "ELSHIELD12345@@",
+        "user": "username",
+        "password": "yourpassword",
         "database_anomalies": "anomalies_db",
         "database_packets": "packets_db"
     },
