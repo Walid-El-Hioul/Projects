@@ -25,6 +25,3 @@ def prompt_for_config():
         json.dump(config, f, indent=4)
     print("Configuration saved to config.json")
 
-
-if __name__ == "__main__":
-    prompt_for_config()

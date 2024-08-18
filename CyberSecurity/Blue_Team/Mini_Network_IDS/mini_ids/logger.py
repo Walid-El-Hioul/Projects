@@ -1,7 +1,9 @@
 import mysql.connector
 from mysql.connector import Error
 import json
-from datetime import datetime, timedelta
+from config_setup import prompt_for_config
+from scapy.all import *
+
 
 class Logger:
     def __init__(self, db_name):
@@ -9,8 +11,11 @@ class Logger:
         self.connection = self.connect_to_db(db_name)
 
     def load_config(self):
-        with open('config.json') as f:
-            return json.load(f)
+        if not os.path.exists('config.json'):
+            prompt_for_config()
+
+            with open('config.json') as f:
+                return json.load(f)
 
     def connect_to_db(self, db_name):
         try:
@@ -40,7 +45,7 @@ class AnomalyLogger(Logger):
     def log_anomaly(self, message):
         try:
             cursor = self.connection.cursor()
-            query = "INSERT INTO anomaly_logs (message) VALUES (%s)"
+            query = "INSERT INTO anomalies_logs (message) VALUES (%s)"
             cursor.execute(query, (message,))
             self.connection.commit()
             print("Anomaly logged successfully")
@@ -48,50 +53,43 @@ class AnomalyLogger(Logger):
             print(f"Error while logging anomaly: {e}")
 
 
+
 class PacketLogger(Logger):
     def __init__(self):
-        super().__init__(db_name=self.load_config()['db_config']['database_packets'])
-        self.current_table = self.get_current_table_name()
-        self.create_daily_table()
+        super().__init__()
+        self.pcap_file = self.get_pcap_file_name()
+        self.pcap_writer = PcapWriter(self.pcap_file, append=True, sync=True)
 
-    def get_current_table_name(self):
+    def get_pcap_file_name(self):
         today_date = datetime.now().strftime('%Y_%m_%d')
-        return f"packet_logs_{today_date}"
+        return f"packet_logs_{today_date}.pcap"
 
-    def create_daily_table(self):
+    def log_packet(self, packet: Packet):
         try:
-            cursor = self.connection.cursor()
-            cursor.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.current_table} (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                src_ip VARCHAR(45),
-                dst_ip VARCHAR(45),
-                protocol VARCHAR(10),
-                length INT,
-                payload BLOB
-            );
-            """)
-            print(f"Table {self.current_table} created or already exists.")
-        except Error as e:
-            print(f"Error while creating table: {e}")
-
-    def log_packet(self, src_ip, dst_ip, protocol, length, payload):
-        try:
-            cursor = self.connection.cursor()
-            query = f"INSERT INTO {self.current_table} (src_ip, dst_ip, protocol, length, payload) VALUES (%s, %s, %s, %s, %s)"
-            cursor.execute(query, (src_ip, dst_ip, protocol, length, payload))
-            self.connection.commit()
-            print("Packet logged successfully")
-        except Error as e:
+            self.pcap_writer.write(packet)
+            print(f"Packet logged successfully to {self.pcap_file}")
+        except Exception as e:
             print(f"Error while logging packet: {e}")
 
-    def delete_old_tables(self):
+    def import_pcap(self, file_path):
         try:
-            yesterday_date = (datetime.now() - timedelta(days=1)).strftime('%Y_%m_%d')
-            old_table_name = f"packet_logs_{yesterday_date}"
-            cursor = self.connection.cursor()
-            cursor.execute(f"DROP TABLE IF EXISTS {old_table_name};")
-            print(f"Old table {old_table_name} deleted.")
-        except Error as e:
-            print(f"Error while deleting old table: {e}")
+            packets = rdpcap(file_path)
+            for packet in packets:
+                self.log_packet(packet)
+            print(f"Packets imported successfully from {file_path}")
+        except Exception as e:
+            print(f"Error while importing packets: {e}")
+
+    def export_pcap(self, export_path):
+        try:
+            if os.path.exists(self.pcap_file):
+                os.rename(self.pcap_file, export_path)
+                print(f"PCAP file exported successfully to {export_path}")
+            else:
+                print(f"PCAP file {self.pcap_file} does not exist.")
+        except Exception as e:
+            print(f"Error while exporting PCAP file: {e}")
+
+    def close(self):
+        self.pcap_writer.close()
+        print("PCAP writer closed.")
