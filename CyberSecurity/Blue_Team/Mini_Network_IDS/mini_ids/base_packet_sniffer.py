@@ -9,7 +9,10 @@ class BasePacketSniffer:
         # Initialize the threading event to control sniffing
         self.stop_event = threading.Event()
         self.config = self.load_config()
-        self.interface = self.config['interface']
+        if self.config is None:
+            raise ValueError("Configuration could not be loaded. Please check your config.json file.")
+        self.interface = self.config['interface'][
+            'interface']  # This line assumes that 'interface' exists in the config
 
     def start_sniffing(self, prn):
         # Start sniffing packets on the specified interface
@@ -24,8 +27,14 @@ class BasePacketSniffer:
         self.stop_event.set()
 
     def load_config(self):
-        if not os.path.exists('config.json'):
-            prompt_for_config()
-
-            with open('config.json') as f:
-                return json.load(f)
+        config_path = 'config.json'
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as config_file:
+                try:
+                    return json.load(config_file)
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON from config file: {e}")
+                    return None
+        else:
+            print("Config file not found.")
+            return None

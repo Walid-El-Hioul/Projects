@@ -1,34 +1,61 @@
 from scapy.all import *
 from collections import defaultdict
 import time
+import smtplib
+from email.mime.text import MIMEText
+import json
+from config_setup import prompt_for_config
 
-class PacketDetector:
+
+class AnomaliesDetection:
     def __init__(self):
         self.syn_count = defaultdict(int)
-        self.syn_threshold = 300  # Increased threshold
-        self.time_window = 60
+        self.syn_threshold = 300  # Threshold for SYN flood detection
+        self.time_window = 60  # Time window for monitoring (in seconds)
         self.last_time = time.time()
-        self.port_scan_count = defaultdict(set)
-        self.port_scan_threshold = 40  # Increased threshold
-        self.dns_count = defaultdict(int)
-        self.dns_threshold = 100  # Increased threshold
-        self.data_threshold = 30000  # Increased threshold
-        self.data_transfers = defaultdict(int)
-        self.unauthorized_ports = {22, 23, 3389}
-        self.ip_mac_map = {}
+        self.http_count = defaultdict(int)
+        self.http_threshold = 500  # Threshold for HTTP flood detection
+        self.http_time_window = 60  # Time window for HTTP flood monitoring
+        self.blocked_ips = set()
+        self.config = self.load_config()
+
+    def load_config(self):
+        if not os.path.exists('config.json'):
+            prompt_for_config()
+
+            with open('config.json') as f:
+                return json.load(f)
+
+    def send_email_alert(self, subject, message):
+        sender_gmail = self.config['alert_config']['sender_gmail']
+        receiver_email = self.config['alert_config']['receiver_email']
+        password = self.config['alert_config']['password']
+
+        msg = MIMEText(message)
+        msg['Subject'] = subject
+        msg['From'] = sender_gmail
+        msg['To'] = receiver_email
+
+
+        try:
+            server = smtplib.SMTP_SSL('smtp.google.com', 587)
+            server.login(sender_gmail, password)
+            server.sendmail(sender_gmail, receiver_email, msg.as_string())
+            server.quit()
+            print(f"Email alert sent to {receiver_email}")
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+
+    def block_ip(self, ip):
+        if ip not in self.blocked_ips:
+            os.system(f"iptables -A INPUT -s {ip} -j DROP")
+            self.blocked_ips.add(ip)
+            print(f"Blocked IP: {ip}")
 
     def detect(self, packet):
         try:
             self.detect_syn_flood(packet)
-            self.detect_port_scanning(packet)
-            self.detect_dns_flooding(packet)
-            self.detect_large_data_transfers(packet)
-            self.detect_sql_injection(packet)
-            self.detect_xss(packet)
-            self.detect_unauthorized_access(packet)
-            self.detect_ip_spoofing(packet)
-            self.detect_packet_injection(packet)
-            #self.detect_abnormal_protocol_usage(packet)
+            self.detect_http_flood(packet)
         except Exception as e:
             print(f"Error occurred: {e}")
 
@@ -39,67 +66,30 @@ class PacketDetector:
             self.last_time = current_time
 
         if packet.haslayer(TCP) and packet[TCP].flags & 0x02:  # SYN flag
-            self.syn_count[packet[IP].src] += 1
-            if self.syn_count[packet[IP].src] > self.syn_threshold:
-                print(f"Detected SYN flood attack from {packet[IP].src}")
-
-    def detect_port_scanning(self, packet):
-        if packet.haslayer(TCP) and packet.haslayer(IP):
             src_ip = packet[IP].src
-            dst_port = packet[TCP].dport
-            self.port_scan_count[src_ip].add(dst_port)
-            if len(self.port_scan_count[src_ip]) > self.port_scan_threshold:
-                print(f"Detected port scanning from {src_ip}")
+            self.syn_count[src_ip] += 1
+            if self.syn_count[src_ip] > self.syn_threshold:
+                alert_message = f"Detected SYN flood attack from {src_ip}"
+                print(alert_message)
+                self.send_email_alert("SYN Flood Attack Detected", alert_message)
+                self.block_ip(src_ip)
 
-    def detect_dns_flooding(self, packet):
-        if packet.haslayer(DNSQR) and packet.haslayer(IP):
-            self.dns_count[packet[IP].src] += 1
-            if self.dns_count[packet[IP].src] > self.dns_threshold:
-                print(f"Detected DNS query flooding from {packet[IP].src}")
+    def detect_http_flood(self, packet):
+        current_time = time.time()
 
-    def detect_large_data_transfers(self, packet):
-        if packet.haslayer(Raw) and packet.haslayer(IP):
-            src_ip = packet[IP].src
-            self.data_transfers[src_ip] += len(packet[Raw].load)
-            if self.data_transfers[src_ip] > self.data_threshold:
-                print(f"Detected large data transfer from {src_ip}")
-
-    def detect_sql_injection(self, packet):
-        if packet.haslayer(Raw):
+        if packet.haslayer(TCP) and packet.haslayer(Raw):
             payload = packet[Raw].load.decode(errors='ignore')
-            sql_patterns = ["SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "OR 1=1"]
-            for pattern in sql_patterns:
-                if pattern in payload.upper():
-                    print(f"Detected SQL injection attempt with payload: {payload}")
+            if "HTTP" in payload:
+                src_ip = packet[IP].src
+                self.http_count[src_ip] += 1
 
-    def detect_xss(self, packet):
-        if packet.haslayer(Raw):
-            payload = packet[Raw].load.decode(errors='ignore')
-            xss_patterns = ["<script>", "</script>", "javascript:"]
-            for pattern in xss_patterns:
-                if pattern in payload:
-                    print(f"Detected XSS attack with payload: {payload}")
+                # Reset the count after the time window
+                if current_time - self.last_time > self.http_time_window:
+                    self.http_count.clear()
+                    self.last_time = current_time
 
-    def detect_unauthorized_access(self, packet):
-        if packet.haslayer(TCP) and packet[TCP].dport in self.unauthorized_ports:
-            print(f"Detected unauthorized access attempt to port {packet[TCP].dport}")
-
-    def detect_ip_spoofing(self, packet):
-        if packet.haslayer(Ether) and packet.haslayer(IP):
-            ip = packet[IP].src
-            mac = packet[Ether].src
-            if ip in self.ip_mac_map and self.ip_mac_map[ip] != mac:
-                print(f"Detected IP spoofing: IP {ip} with MAC {mac}")
-            self.ip_mac_map[ip] = mac
-
-    def detect_packet_injection(self, packet):
-        if packet.haslayer(Raw):
-            payload = packet[Raw].load.decode(errors='ignore')
-            if len(payload) > 1000:  # Increased threshold for large payloads
-                print(f"Detected potential packet injection with payload: {payload}")
-
-    #def detect_abnormal_protocol_usage(self, packet):
-      #  if packet.haslayer(UDP) and packet.haslayer(Raw):
-           # payload = packet[Raw].load.decode(errors='ignore')
-         #   if "HTTP" in payload:
-             #   print("Detected abnormal protocol usage: HTTP over UDP")
+                if self.http_count[src_ip] > self.http_threshold:
+                    alert_message = f"Detected HTTP flood attack from {src_ip}"
+                    print(alert_message)
+                    self.send_email_alert("HTTP Flood Attack Detected", alert_message)
+                    self.block_ip(src_ip)

@@ -6,7 +6,7 @@ from scapy.all import *
 
 
 class Logger:
-    def __init__(self, db_name):
+    def __init__(self, db_name="anomalies_db"):
         self.config = self.load_config()
         self.connection = self.connect_to_db(db_name)
 
@@ -14,10 +14,25 @@ class Logger:
         if not os.path.exists('config.json'):
             prompt_for_config()
 
-            with open('config.json') as f:
-                return json.load(f)
+        with open('config.json') as f:
+            return json.load(f)
 
-    def connect_to_db(self, db_name):
+    def create_db(self, db_name="anomalies_db"):
+        try:
+            connection = mysql.connector.connect(
+                host=self.config['db_config']['host'],
+                user=self.config['db_config']['user'],
+                password=self.config['db_config']['password']
+            )
+            cursor = connection.cursor()
+            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+            print(f"Database {db_name} created or already exists.")
+            cursor.close()
+            connection.close()
+        except Error as e:
+            print(f"Error while creating database: {e}")
+
+    def connect_to_db(self, db_name="anomalies_db"):
         try:
             connection = mysql.connector.connect(
                 host=self.config['db_config']['host'],
@@ -29,18 +44,48 @@ class Logger:
                 print(f"Connected to the MySQL database: {db_name}")
             return connection
         except Error as e:
-            print(f"Error: {e}")
+            print(f"Connection failed: {e}. Attempting to create database...")
+            self.create_db(db_name)
+            return self.retry_connect_to_db(db_name)
+
+    def retry_connect_to_db(self, db_name="anomalies_db"):
+        try:
+            connection = mysql.connector.connect(
+                host=self.config['db_config']['host'],
+                user=self.config['db_config']['user'],
+                password=self.config['db_config']['password'],
+                database=db_name
+            )
+            if connection.is_connected():
+                print(f"Connected to the MySQL database: {db_name} after creation.")
+            return connection
+        except Error as e:
+            print(f"Retry connection failed: {e}")
             return None
 
-    def close(self):
-        if self.connection.is_connected():
+    def close_db(self):
+        if self.connection and self.connection.is_connected():
             self.connection.close()
             print("MySQL connection closed")
 
 
 class AnomalyLogger(Logger):
     def __init__(self):
-        super().__init__(db_name=self.load_config()['db_config']['database_anomalies'])
+        super().__init__(db_name="anomalies_db")
+
+    def create_anomaly_table(self):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS anomalies_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                message TEXT
+            );
+            """)
+            print("Anomalies table created or already exists.")
+        except Error as e:
+            print(f"Error while creating anomalies table: {e}")
 
     def log_anomaly(self, message):
         try:
@@ -53,10 +98,9 @@ class AnomalyLogger(Logger):
             print(f"Error while logging anomaly: {e}")
 
 
+class PacketLogger():
 
-class PacketLogger(Logger):
     def __init__(self):
-        super().__init__()
         self.pcap_file = self.get_pcap_file_name()
         self.pcap_writer = PcapWriter(self.pcap_file, append=True, sync=True)
 
@@ -90,6 +134,6 @@ class PacketLogger(Logger):
         except Exception as e:
             print(f"Error while exporting PCAP file: {e}")
 
-    def close(self):
+    def close_pcap(self):
         self.pcap_writer.close()
         print("PCAP writer closed.")
