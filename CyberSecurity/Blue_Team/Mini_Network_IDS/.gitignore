@@ -77,5 +77,6 @@ venv.bak/
 .env
 
 # Others
-config.json
-test.py
+/mini_ids/config.json
+/mini_ids/test.py
+
