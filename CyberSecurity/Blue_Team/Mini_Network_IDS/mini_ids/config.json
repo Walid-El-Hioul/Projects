@@ -1,11 +1,19 @@
 {
     "db_config": {
         "host": "localhost",
+<<<<<<< HEAD
         "user": "Shield",
         "password": "ELSHIELD12345@@"
+=======
+        "user": "username",
+        "password": "yourpassword",
+        "database_anomalies": "anomalies_db",
+        "database_packets": "packets_db"
+>>>>>>> 82800e7e8f46a777d97bd9f27d9453b4fc3be470
     },
     "interface": {
         "interface": "Ethernet"
+<<<<<<< HEAD
     },
     "alert_config": {
         "sender_gmail": "ms.darkness0000@gmail.com",
@@ -13,3 +21,7 @@
         "receiver_email": "ms.darkness0000@gmail.com"
     }
 }
+=======
+
+}
+>>>>>>> 82800e7e8f46a777d97bd9f27d9453b4fc3be470
