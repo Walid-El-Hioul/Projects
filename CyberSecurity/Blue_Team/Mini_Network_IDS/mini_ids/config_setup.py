@@ -44,9 +44,12 @@ def prompt_for_config():
     # Display interfaces in a user-friendly format
     for i, iface in enumerate(interfaces):
         iface_name = iface['name']
+        iface_mac = iface['mac']
         iface_ip = iface['ip']
         iface_status = "Enabled" if iface['is_enabled'] else "Disabled"
-        print(f"[{i}] {iface_name} - IP: {iface_ip} - Status: {iface_status}")
+        print(f"[{i}] {iface_name} : {iface_status}")
+        print(f"  ├─ IP  : {iface_ip}")
+        print(f"  └─ MAC : {iface_mac}")
 
     while True:
         try:
@@ -97,3 +100,6 @@ def prompt_for_config():
         print(f"Configuration saved to config.json with selected interface: {config['interface']['interface']}")
     except IOError as e:
         print(f"Failed to save configuration: {e}")
+
+
+prompt_for_config()
