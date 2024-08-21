@@ -1,5 +1,25 @@
 import json
 import getpass
+import wmi
+
+
+def get_network_interfaces():
+    c = wmi.WMI()
+    interfaces = []
+
+    for adapter in c.Win32_NetworkAdapterConfiguration():
+        description = adapter.Description
+        mac_address = adapter.MACAddress
+        ip_address = ", ".join(adapter.IPAddress) if adapter.IPAddress else "No IP"
+        is_enabled = adapter.IPEnabled
+        interfaces.append({
+            'name': description,
+            'mac': mac_address,
+            'ip': ip_address,
+            'is_enabled': is_enabled
+        })
+
+    return interfaces
 
 
 def prompt_for_config():
@@ -14,9 +34,36 @@ def prompt_for_config():
     }
 
     # Interface configuration
-    print("Please enter your interface configuration:")
+    print("Please choose your network interface:")
+    interfaces = get_network_interfaces()
+
+    if not interfaces:
+        print("No valid network interfaces found. Exiting the configuration.")
+        return
+
+    # Display interfaces in a user-friendly format
+    for i, iface in enumerate(interfaces):
+        iface_name = iface['name']
+        iface_ip = iface['ip']
+        iface_status = "Enabled" if iface['is_enabled'] else "Disabled"
+        print(f"[{i}] {iface_name} - IP: {iface_ip} - Status: {iface_status}")
+
+    while True:
+        try:
+            interface_index = int(input("Select an interface by number: "))
+            if 0 <= interface_index < len(interfaces):
+                selected_interface = interfaces[interface_index]
+                break
+            else:
+                print("Invalid selection. Please enter a valid number.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
     config['interface'] = {
-        'interface': input("Interface: ")
+        'interface': selected_interface['name'],
+        'mac': selected_interface['mac'],
+        'ip': selected_interface['ip'],
+        'is_enabled': selected_interface['is_enabled']
     }
 
     # Alerts configuration with email validation
@@ -47,6 +94,6 @@ def prompt_for_config():
     try:
         with open('config.json', 'w') as f:
             json.dump(config, f, indent=4)
-        print("Configuration saved to config.json")
+        print(f"Configuration saved to config.json with selected interface: {config['interface']['interface']}")
     except IOError as e:
         print(f"Failed to save configuration: {e}")

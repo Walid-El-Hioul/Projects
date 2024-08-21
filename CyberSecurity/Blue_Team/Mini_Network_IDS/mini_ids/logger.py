@@ -1,8 +1,8 @@
 import mysql.connector
 from mysql.connector import Error
 import json
-from config_setup import prompt_for_config
 from scapy.all import *
+import csv
 
 
 class Logger:
@@ -11,11 +11,30 @@ class Logger:
         self.connection = self.connect_to_db(db_name)
 
     def load_config(self):
-        if not os.path.exists('config.json'):
-            prompt_for_config()
+        config_path = 'config.json'
 
-        with open('config.json') as f:
-            return json.load(f)
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as config_file:
+                try:
+                    return json.load(config_file)
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON from config file: {e}")
+                except Exception as e:
+                    print(f"An unexpected error occurred: {e}")
+        else:
+            print("Config file not found.")
+
+        # If loading the config failed, prompt the user to create a new config
+        user_input = input(
+            "Configuration could not be loaded. Would you like to create a new configuration? (yes/no): ").strip().lower()
+        if user_input == 'yes':
+            from config_setup import prompt_for_config
+            prompt_for_config()
+            # Try loading the config again after creating it
+            return self.load_config()
+        else:
+            print("Exiting because configuration could not be loaded or created.")
+            return None
 
     def create_db(self, db_name="anomalies_db"):
         try:
@@ -97,6 +116,29 @@ class AnomalyLogger(Logger):
         except Error as e:
             print(f"Error while logging anomaly: {e}")
 
+    def export_anomalies_to_csv(self, export_path=None):
+        if export_path is None:
+            today_date = datetime.now().strftime('%Y_%m_%d')
+            export_path = f"anomalies_logs_{today_date}.csv"
+
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM anomalies_logs")
+            rows = cursor.fetchall()
+
+            with open(export_path, 'w', newline='', encoding='utf-8') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                # Write the header
+                csvwriter.writerow(['ID', 'Timestamp', 'Message'])
+                # Write the data
+                csvwriter.writerows(rows)
+
+            print(f"Anomalies logs exported successfully to {export_path}")
+        except Error as e:
+            print(f"Error while exporting anomalies logs: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
 
 class PacketLogger():
 
@@ -111,7 +153,6 @@ class PacketLogger():
     def log_packet(self, packet: Packet):
         try:
             self.pcap_writer.write(packet)
-            print(f"Packet logged successfully to {self.pcap_file}")
         except Exception as e:
             print(f"Error while logging packet: {e}")
 
@@ -137,3 +178,19 @@ class PacketLogger():
     def close_pcap(self):
         self.pcap_writer.close()
         print("PCAP writer closed.")
+
+
+class PcapFileLogger(PacketLogger):
+    def __init__(self, pcap_filename):
+        super().__init__()
+        self.pcap_file = pcap_filename
+        self.pcap_writer = PcapWriter(self.pcap_file, append=True, sync=True)
+        self.log_file = f"{self.pcap_file}_analysis.log"
+
+    def log_analysis(self, message):
+        try:
+            with open(self.log_file, 'a') as log:
+                log.write(f"{datetime.now()} - {message}\n")
+            print(f"Analysis logged successfully in {self.log_file}")
+        except Exception as e:
+            print(f"Error while logging analysis: {e}")

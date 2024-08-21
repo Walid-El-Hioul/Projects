@@ -73,9 +73,6 @@ venv.bak/
 *.sql
 *.mysql
 
-# Environment variables file (if you use one)
-.env
-
 # Others
 /mini_ids/config.json
 /mini_ids/test.py

@@ -4,27 +4,45 @@ import time
 import smtplib
 from email.mime.text import MIMEText
 import json
-from config_setup import prompt_for_config
 
 
 class AnomaliesDetection:
     def __init__(self):
         self.syn_count = defaultdict(int)
-        self.syn_threshold = 300  # Threshold for SYN flood detection
-        self.time_window = 60  # Time window for monitoring (in seconds)
+        self.syn_threshold = 300
+        self.time_window = 60  # in second
         self.last_time = time.time()
         self.http_count = defaultdict(int)
-        self.http_threshold = 500  # Threshold for HTTP flood detection
-        self.http_time_window = 60  # Time window for HTTP flood monitoring
+        self.http_threshold = 500
+        self.http_time_window = 60
         self.blocked_ips = set()
         self.config = self.load_config()
 
     def load_config(self):
-        if not os.path.exists('config.json'):
-            prompt_for_config()
+        config_path = 'config.json'
 
-            with open('config.json') as f:
-                return json.load(f)
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as config_file:
+                try:
+                    return json.load(config_file)
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON from config file: {e}")
+                except Exception as e:
+                    print(f"An unexpected error occurred: {e}")
+        else:
+            print("Config file not found.")
+
+        # If loading the config failed, prompt the user to create a new config
+        user_input = input(
+            "Configuration could not be loaded. Would you like to create a new configuration? (yes/no): ").strip().lower()
+        if user_input == 'yes':
+            from config_setup import prompt_for_config
+            prompt_for_config()
+            # Try loading the config again after creating it
+            return self.load_config()
+        else:
+            print("Exiting because configuration could not be loaded or created.")
+            return None
 
     def send_email_alert(self, subject, message):
         sender_gmail = self.config['alert_config']['sender_gmail']
