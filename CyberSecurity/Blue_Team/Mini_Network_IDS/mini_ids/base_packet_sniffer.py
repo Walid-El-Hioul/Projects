@@ -1,14 +1,14 @@
 from scapy.all import *
 import threading
 import json
+from config_setup import ConfigSetup
 
 
 class BasePacketSniffer:
     def __init__(self):
+        self.setup_config = ConfigSetup()
         self.stop_event = threading.Event()
         self.config = self.load_config()
-        if self.config is None:
-            raise ValueError("Configuration could not be loaded. Please check your config.json file.")
         self.interface = self.config['interface']['interface']
         self.mini_ids = None
 
@@ -43,10 +43,9 @@ class BasePacketSniffer:
 
         # If loading the config failed, prompt the user to create a new config
         user_input = input(
-            "Configuration could not be loaded. Would you like to create a new configuration? (yes/no): ").strip().lower()
+            "Error. Would you like to create a new interface configuration? (yes/no): ").strip().lower()
         if user_input == 'yes':
-            from config_setup import prompt_for_config
-            prompt_for_config()
+            self.setup_config.prompt_for_interface_config()
             # Try loading the config again after creating it
             return self.load_config()
         else:

@@ -1,1 +1,0 @@
-https://medium.com/@moraneus/exploring-network-fundamentals-with-python-scapy-c21024813285 about scapy

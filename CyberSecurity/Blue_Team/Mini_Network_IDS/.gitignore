@@ -76,4 +76,4 @@ venv.bak/
 # Others
 /mini_ids/config.json
 /mini_ids/test.py
-
+/mini_ids/*.pcap
