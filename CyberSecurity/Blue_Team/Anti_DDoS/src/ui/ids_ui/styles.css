@@ -1,0 +1,42 @@
+QMainWindow {
+  background-color: #f5f5f5;
+  color: #333;
+}
+QTableWidget {
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+}
+QTextEdit {
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+}
+QToolBar {
+  background-color: #fff;
+  border: none;
+}
+QPushButton {
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px;
+  font-weight: bold;
+  margin-right: 5px;
+  min-width: 120px;
+}
+QPushButton#start_capture_button {
+  background-color: #4caf50;
+}
+QPushButton#stop_capture_button {
+  background-color: #f44336;
+}
+QPushButton#refresh_capture_button {
+  background-color: #ffc107;
+}
+QPushButton#sensor_options_button {
+  background-color: #2196f3;
+}
+QPushButton:disabled {
+  background-color: #ccc;
+}

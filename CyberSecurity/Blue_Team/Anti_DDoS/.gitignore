@@ -1,0 +1,118 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Pyre type checker
+.pyre/
+
+# PyCharm
+.idea/
+
+# Database credentials
+*.db
+*.sql
+*.mysql
+
+# Assets (generated or temporary)
+assets/images/
+assets/fonts/
+assets/styles/
+
+# Configuration files
+config/environment/
+
+# Logs
+logs/
+error/
+access/
+debug/
+
+# Build artifacts
+build/
+dist/
+installer/
+
+# Database-related files
+database/
+migrations/
+schemas/
+seeds/
+
+# Documentation build files
+docs/build/
+
+# IDE and editor-specific files
+*.swp
+*.swo
+*.vscode/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Compiled files
+*.class
+*.o
+*.so
+
+# Miscellaneous
+/Anti-DDoS/config/config.json
+/Anti-DDoS/*.pcap
