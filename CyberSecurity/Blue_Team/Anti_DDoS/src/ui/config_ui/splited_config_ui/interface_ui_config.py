@@ -9,7 +9,7 @@ class InterfaceApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Select Interface")
-        self.setGeometry(100, 100, 800, 600)  # Set an appropriate window size
+        self.setGeometry(100, 100, 800, 600)
 
         # Set a modern dark theme
         self.setStyleSheet("""

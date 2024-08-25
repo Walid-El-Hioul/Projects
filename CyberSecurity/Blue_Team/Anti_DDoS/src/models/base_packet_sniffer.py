@@ -1,13 +1,13 @@
 from scapy.all import *
 import threading
-from utils import Utils
+from src.utils.utils import LoadConfig
 
 
 class BasePacketSniffer:
     def __init__(self):
         self.stop_event = threading.Event()
-        self.utils = Utils()
-        self.config = self.utils.load_config()
+        self.load_config = LoadConfig()
+        self.config = self.load_config.load_config()
         self.interface = self.config['interface']['interface']
         self.anomalies_detector = None
 
@@ -25,5 +25,3 @@ class BasePacketSniffer:
 
     def stop_sniffing(self):
         self.stop_event.set()
-
-

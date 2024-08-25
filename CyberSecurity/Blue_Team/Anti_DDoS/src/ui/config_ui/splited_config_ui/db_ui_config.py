@@ -5,12 +5,14 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
+from src.utils.utils import Config
 
-class AlertConfigApp(QMainWindow):
+
+class DBConfigApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Alert Configuration")
-        self.setGeometry(100, 100, 800, 600)  # Set an appropriate window size
+        self.setWindowTitle("Database Configuration")
+        self.setGeometry(100, 100, 800, 600)
 
         # Set a modern dark theme
         self.setStyleSheet("""
@@ -57,24 +59,24 @@ class AlertConfigApp(QMainWindow):
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(15)
 
-        # Alert configuration inputs
-        layout.addWidget(QLabel("Configure Alert Settings"))
+        # Database configuration inputs
+        layout.addWidget(QLabel("Configure Database Connection"))
 
-        self.sender_input = QLineEdit()
-        self.sender_input.setPlaceholderText("Enter sender email (e.g., example@gmail.com)")
-        layout.addWidget(QLabel("Sender Email:"))
-        layout.addWidget(self.sender_input)
+        self.host_input = QLineEdit()
+        self.host_input.setPlaceholderText("Enter host (e.g., localhost)")
+        layout.addWidget(QLabel("Host:"))
+        layout.addWidget(self.host_input)
+
+        self.user_input = QLineEdit()
+        self.user_input.setPlaceholderText("Enter user")
+        layout.addWidget(QLabel("User:"))
+        layout.addWidget(self.user_input)
 
         self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("Enter sender email password")
+        self.password_input.setPlaceholderText("Enter password")
         self.password_input.setEchoMode(QLineEdit.Password)
         layout.addWidget(QLabel("Password:"))
         layout.addWidget(self.password_input)
-
-        self.receiver_input = QLineEdit()
-        self.receiver_input.setPlaceholderText("Enter receiver email")
-        layout.addWidget(QLabel("Receiver Email:"))
-        layout.addWidget(self.receiver_input)
 
         # Submit button
         self.submit_button = QPushButton("Submit")
@@ -88,28 +90,43 @@ class AlertConfigApp(QMainWindow):
         layout.addLayout(button_layout)
 
         # Connect input fields to validation function
-        self.sender_input.textChanged.connect(self.validate_inputs)
+        self.host_input.textChanged.connect(self.validate_inputs)
+        self.user_input.textChanged.connect(self.validate_inputs)
         self.password_input.textChanged.connect(self.validate_inputs)
-        self.receiver_input.textChanged.connect(self.validate_inputs)
 
     def validate_inputs(self):
         # Check if all fields are filled
-        if (self.sender_input.text() and
-                self.password_input.text() and
-                self.receiver_input.text()):
+        if (self.host_input.text() and
+                self.user_input.text() and
+                self.password_input.text()):
             self.submit_button.setEnabled(True)
         else:
             self.submit_button.setEnabled(False)
 
     def submit_form(self):
+
         # Handle form submission
         print("Form Submitted!")
-        print(f"Sender Email: {self.sender_input.text()}")
+        print(f"Host: {self.host_input.text()}")
+        print(f"User: {self.user_input.text()}")
         print(f"Password: {self.password_input.text()}")
-        print(f"Receiver Email: {self.receiver_input.text()}")
+
+        # Load existing JSON data
+        config = Config()
+
+        data = {}
+
+        # Update existing data or create new data
+        data['host'] = self.host_input.text()
+        data['user'] = self.user_input.text()
+        data['password'] = self.password_input.text()
+
+        # Write updated data to JSON file
+        config.write_config_update(data)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = AlertConfigApp()
+    window = DBConfigApp()
     window.show()
     sys.exit(app.exec_())
