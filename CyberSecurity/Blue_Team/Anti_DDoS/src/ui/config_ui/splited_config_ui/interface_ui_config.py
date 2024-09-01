@@ -1,9 +1,12 @@
 import sys
+import wmi
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QComboBox, QPushButton, QFormLayout
 )
 from PyQt5.QtCore import Qt
+from src.utils.utils import Config
+
 
 class InterfaceApp(QMainWindow):
     def __init__(self):
@@ -61,8 +64,10 @@ class InterfaceApp(QMainWindow):
         layout.addLayout(form_layout)
 
         self.interface_combo = QComboBox()
-        self.interface_combo.addItems(["Select Interface", "Interface 1", "Interface 2", "Interface 3"])  # Add your interface options here
-        
+        self.interfaces = self.get_network_interfaces()
+        self.interface_combo.addItem("Select Interface")
+        self.interface_combo.addItems([iface['name'] for iface in self.interfaces])
+
         # Add the label and combo box to the form layout
         form_layout.addRow(QLabel("Interface:"), self.interface_combo)
 
@@ -80,6 +85,24 @@ class InterfaceApp(QMainWindow):
         # Connect combo box to validation function
         self.interface_combo.currentIndexChanged.connect(self.validate_selection)
 
+    def get_network_interfaces(self):
+        c = wmi.WMI()
+        interfaces = []
+
+        for adapter in c.Win32_NetworkAdapterConfiguration():
+            description = adapter.Description
+            mac_address = adapter.MACAddress
+            ip_address = ", ".join(adapter.IPAddress) if adapter.IPAddress else "No IP"
+            is_enabled = adapter.IPEnabled
+            interfaces.append({
+                'name': description,
+                'mac': mac_address,
+                'ip': ip_address,
+                'is_enabled': is_enabled
+            })
+
+        return interfaces
+
     def validate_selection(self):
         # Check if an interface is selected
         if self.interface_combo.currentIndex() > 0:  # Index 0 is "Select Interface"
@@ -88,10 +111,16 @@ class InterfaceApp(QMainWindow):
             self.submit_button.setEnabled(False)
 
     def submit_form(self):
-        # Handle form submission
-        selected_interface = self.interface_combo.currentText()
-        print("Form Submitted!")
-        print(f"Selected Interface: {selected_interface}")
+
+        config = Config()
+
+        data = {
+            'interface': self.host_input.text()
+        }
+
+        config.write_config_update("interface_config", data)
+
+        self.close()
 
 
 if __name__ == '__main__':

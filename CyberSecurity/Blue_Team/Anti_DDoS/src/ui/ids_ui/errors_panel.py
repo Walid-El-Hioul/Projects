@@ -9,7 +9,7 @@ class MainErrorWindow():
 
     def show_error(self, message, details=None):
         # Ensure an application instance is running
-        app = QApplication.instance()
+        app = QApplication.instance ()
         if app is None:
             app = QApplication(sys.argv)
 

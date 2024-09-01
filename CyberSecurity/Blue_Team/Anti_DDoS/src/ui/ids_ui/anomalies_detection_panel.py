@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QTableWidget, QWidget, QVBoxLayout
 
+
 class AnomaliesDetectionPanel(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
