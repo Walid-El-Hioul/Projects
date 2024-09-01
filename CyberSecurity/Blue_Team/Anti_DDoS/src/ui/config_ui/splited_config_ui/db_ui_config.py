@@ -95,7 +95,7 @@ class DBConfigApp(QMainWindow):
         self.password_input.textChanged.connect(self.validate_inputs)
 
     def validate_inputs(self):
-        # Check if all fields are filled
+
         if (self.host_input.text() and
                 self.user_input.text() and
                 self.password_input.text()):
@@ -105,24 +105,17 @@ class DBConfigApp(QMainWindow):
 
     def submit_form(self):
 
-        # Handle form submission
-        print("Form Submitted!")
-        print(f"Host: {self.host_input.text()}")
-        print(f"User: {self.user_input.text()}")
-        print(f"Password: {self.password_input.text()}")
-
-        # Load existing JSON data
         config = Config()
 
-        data = {}
+        data = {
+            'host': self.host_input.text(),
+            'user': self.user_input.text(),
+            'password': self.password_input.text()
+        }
 
-        # Update existing data or create new data
-        data['host'] = self.host_input.text()
-        data['user'] = self.user_input.text()
-        data['password'] = self.password_input.text()
+        config.write_config_update("db_config", data)
 
-        # Write updated data to JSON file
-        config.write_config_update(data)
+        self.close()
 
 
 if __name__ == '__main__':

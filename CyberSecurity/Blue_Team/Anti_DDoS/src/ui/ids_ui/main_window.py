@@ -56,7 +56,6 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setStyle("Fusion")  # Set the style to the system's default style
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())

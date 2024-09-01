@@ -93,6 +93,7 @@ class InterfaceApp(QMainWindow):
         print("Form Submitted!")
         print(f"Selected Interface: {selected_interface}")
 
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = InterfaceApp()

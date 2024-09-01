@@ -1,11 +1,12 @@
 import json
 import os
-from ..ui.ids_ui.errors_panel import MainErrorWindow
+from src.ui.ids_ui.errors_panel import MainErrorWindow
 
 
 class Config:
     def __init__(self):
-        self.config_path = os.path.join('config', 'config.json')
+        self.script_dir = os.path.dirname(__file__)
+        self.config_path = os.path.abspath(os.path.join(self.script_dir, '../../config/environment/config.json'))
         self.error_window = MainErrorWindow()
 
     def load_config(self):
@@ -64,7 +65,31 @@ class Config:
         else:
             self.error_window.show_error("Interface configuration file not found.")
 
-    def write_config_update(self, data):
-        if os.path.exists(self.config_path):
+    def write_config_update(self, section, new_data):
+        try:
+            config_data = {}
+
+            if os.path.exists(self.config_path) and os.path.getsize(self.config_path) > 0:
+                with open(self.config_path, 'r') as f:
+                    try:
+                        config_data = json.load(f)
+                    except json.JSONDecodeError:
+                        config_data = {}
+
+            if section not in config_data:
+                config_data[section] = {}
+
+            config_data[section].update(new_data)
+
             with open(self.config_path, 'w') as f:
-                json.dump(data, f, indent=4)
+                json.dump(config_data, f, indent=4)
+
+        except Exception as e:
+            self.error_window.show_error("Error writing to configuration file.", e)
+
+
+
+
+
+
+
