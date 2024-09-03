@@ -14,7 +14,6 @@ class InterfaceApp(QMainWindow):
         self.setWindowTitle("Select Interface")
         self.setGeometry(100, 100, 800, 600)
 
-        # Set a modern dark theme
         self.setStyleSheet("""
             QMainWindow, QWidget {
                 background-color: #2e2e2e;
@@ -111,15 +110,20 @@ class InterfaceApp(QMainWindow):
             self.submit_button.setEnabled(False)
 
     def submit_form(self):
-
         config = Config()
 
+        # Get the selected interface name
+        selected_interface = self.interface_combo.currentText()
+
+        # Prepare the data to write to the config
         data = {
-            'interface': self.host_input.text()
+            'interface': selected_interface
         }
 
+        # Update the config with the selected interface
         config.write_config_update("interface_config", data)
 
+        # Close the application after submission
         self.close()
 
 
